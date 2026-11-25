@@ -1,0 +1,17 @@
+# Ollama: local AI models for JARVIS (engine-agnostic plan, phase 1d). CPU only.
+# Reachable only from Serverus itself (127.0.0.1): not from the LAN, not from the tailnet.
+services:
+  ollama:
+    image: ollama/ollama:0.40.13
+    container_name: ollama
+    ports:
+      - "127.0.0.1:11434:11434"
+    volumes:
+      - ./data:/root/.ollama
+    environment:
+      OLLAMA_CONTEXT_LENGTH: "16384"   # JARVIS keeps conversations under 50% of this
+      OLLAMA_KEEP_ALIVE: "10m"         # unload the model after 10 idle minutes, RAM back to the other services
+      OLLAMA_NUM_PARALLEL: "1"
+      OLLAMA_MAX_LOADED_MODELS: "1"
+    mem_limit: 8g
+    restart: unless-stopped

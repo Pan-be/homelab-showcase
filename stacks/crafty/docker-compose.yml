@@ -1,0 +1,25 @@
+version: "3.8"
+
+services:
+  crafty:
+    image: registry.gitlab.com/crafty-controller/crafty-4:4.11.0
+    container_name: crafty
+    ports:
+      - "25565:25565"
+      - "8443:8443"
+    volumes:
+      - ./backups:/crafty/backups
+      - ./logs:/crafty/logs
+      - ./servers:/crafty/servers
+      - ./config:/crafty/config
+      - ./app_config:/crafty/app/config
+    restart: unless-stopped
+  twingate-connector:
+    image: twingate/connector:1.95.0
+    container_name: minecraft-connector
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      - TWINGATE_NETWORK=panstwobe
+      - TWINGATE_ACCESS_TOKEN=${TWINGATE_ACCESS_TOKEN}
+      - TWINGATE_REFRESH_TOKEN=${TWINGATE_REFRESH_TOKEN}

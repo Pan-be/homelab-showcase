@@ -1,0 +1,9 @@
+[{"type":0,"domain":"pagead2.googlesyndication.com","enabled":1,"comment":null},
+{"type":0,"domain":"googleads.g.doubleclick.net","enabled":1,"comment":null},
+{"type":0,"domain":"tpc.googlesyndication.com","enabled":1,"comment":null},
+{"type":0,"domain":"securepubads.g.doubleclick.net","enabled":1,"comment":null},
+{"type":0,"domain":"fundingchoicesmessages.google.com","enabled":1,"comment":null},
+{"type":0,"domain":"cdn.jsdelivr.net","enabled":1,"comment":null},
+{"type":0,"domain":"static.doubleclick.net","enabled":1,"comment":null},
+{"type":0,"domain":"ad.doubleclick.net","enabled":1,"comment":null},
+{"type":0,"domain":"analytics.google.com","enabled":1,"comment":"GA4 admin panel only, added 2026-10-23"}]

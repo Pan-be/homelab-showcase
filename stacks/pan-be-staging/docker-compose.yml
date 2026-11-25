@@ -1,0 +1,42 @@
+services:
+  db:
+    image: mariadb:11.4.13
+    container_name: pan-be-db
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: wordpress
+      MARIADB_USER: wordpress
+      MARIADB_PASSWORD: ${DB_PASSWORD}
+      MARIADB_RANDOM_ROOT_PASSWORD: "1"
+    volumes:
+      - ./db:/var/lib/mysql
+    networks:
+      - internal
+
+  wordpress:
+    image: wordpress:7.1.3-php8.5-apache
+    container_name: pan-be-wp
+    restart: unless-stopped
+    depends_on:
+      - db
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: ${DB_PASSWORD}
+      WORDPRESS_CONFIG_EXTRA: |
+        define('WP_HOME', 'https://pan-be.home.arpa');
+        define('WP_SITEURL', 'https://pan-be.home.arpa');
+        define('WP_ENVIRONMENT_TYPE', 'staging');
+    volumes:
+      - ./wp:/var/www/html
+      - /home/admin/dev/pan-be:/var/www/html/wp-content/themes/panbe
+      - ./uploads.ini:/usr/local/etc/php/conf.d/uploads.ini:ro
+    networks:
+      - internal
+      - caddy_net
+
+networks:
+  internal:
+  caddy_net:
+    external: true

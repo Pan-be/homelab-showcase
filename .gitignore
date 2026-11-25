@@ -1,0 +1,12 @@
+# Real secrets and env files never go in; only .env.example.
+.env
+*.env
+!*.env.example
+secrets/
+# Rollback copies from manual edits on the host.
+*.bak*
+*.before*
+*~
+
+# Local Ansible tooling
+.venv/

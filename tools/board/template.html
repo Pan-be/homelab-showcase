@@ -1,0 +1,160 @@
+<title>Priorities Board</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="board-version" content="{version}">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Barlow+Semi+Condensed:wght@500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: six glass lanes over the Homepage forest backdrop; 3 cards per lane until "Show all"; lanes fold to their header on a phone. Single dark look to match Homepage (theme: dark, slate). */
+:root {{
+  color-scheme: dark;
+  --bg: #0d1418; --glass: rgba(10,18,24,.38); --glass-card: rgba(22,32,40,.58); --glass-hover: rgba(30,42,52,.68);
+  --edge: rgba(255,255,255,.09); --fg: #e6ecef; --muted: #a3b0b8; --shadow: 0 4px 14px rgba(0,0,0,.28);
+  --c-prog: #5fd19c; --c-wait: #f0b54a; --c-todo: #8fb6dd; --c-rec: #c1a3ee; --c-idea: #a1aab3; --c-done: #7f8a94;
+  --p-web: #79b4f2; --p-home: #5ccdc2; --p-pers: #f0a868; --p-meta: #b69af0; --p-none: #a1aab3;
+  --f-display: "Barlow Semi Condensed", "Arial Narrow", system-ui, sans-serif;
+  --f-body: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}}
+body {{ background: var(--bg) {bg} center / cover fixed no-repeat; color: var(--fg); font: 14px/1.45 var(--f-body); margin: 0; }}
+body.embed {{ background: transparent; }}
+.wrap {{ display: flex; flex-direction: column; gap: 12px; box-sizing: border-box;
+  padding-block: 14px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }}
+body.embed .wrap {{ padding-block: 2px 6px; padding-left: 4px; padding-right: 4px; }}
+.top {{ display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 18px; }}
+.top h1 {{ font: 600 22px/1.1 var(--f-display); letter-spacing: .01em; margin: 0; text-shadow: 0 1px 6px rgba(0,0,0,.4); }}
+.stats {{ display: flex; flex-wrap: wrap; gap: 4px 14px; font: 12px var(--f-mono); color: var(--muted); font-variant-numeric: tabular-nums; }}
+.stats b {{ color: var(--fg); font-weight: 500; }}
+.src {{ margin-left: auto; font: 11px var(--f-mono); color: var(--muted); }}
+.board {{ display: grid; grid-template-columns: repeat(6, minmax(220px, 1fr)); gap: 10px; align-items: start; overflow-x: auto; padding-bottom: 4px; }}
+.col {{ background: var(--glass); border: 1px solid var(--edge); border-top: 3px solid var(--lc); border-radius: 8px;
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); box-shadow: var(--shadow); min-width: 0; display: flex; flex-direction: column; }}
+.c-prog {{ --lc: var(--c-prog); }} .c-wait {{ --lc: var(--c-wait); }} .c-todo {{ --lc: var(--c-todo); }}
+.c-rec {{ --lc: var(--c-rec); }} .c-idea {{ --lc: var(--c-idea); }} .c-done {{ --lc: var(--c-done); }}
+.head {{ all: unset; box-sizing: border-box; cursor: pointer; display: flex; align-items: center; gap: 8px; padding: 9px 11px 8px; width: 100%; border-radius: 6px 6px 0 0; }}
+.head:hover {{ background: rgba(255,255,255,.04); }}
+.head:focus-visible {{ outline: 2px solid var(--lc); outline-offset: -2px; }}
+.head h2 {{ font: 600 13px/1 var(--f-display); text-transform: uppercase; letter-spacing: .08em; margin: 0; color: var(--lc); flex: 1; }}
+.n {{ font: 500 12px var(--f-mono); color: var(--muted); font-variant-numeric: tabular-nums; }}
+.chev {{ width: 7px; height: 7px; border-right: 1.5px solid var(--muted); border-bottom: 1.5px solid var(--muted); transform: rotate(45deg) translate(-2px,-2px); transition: transform .15s; }}
+.col.folded .chev {{ transform: rotate(-45deg); }}
+.col.folded .body {{ display: none; }}
+.body {{ display: flex; flex-direction: column; gap: 7px; padding: 0 8px 9px; }}
+.cards {{ display: flex; flex-direction: column; gap: 7px; min-height: 0; }}
+.cards {{ overflow-y: auto; overscroll-behavior: contain; padding-right: 2px; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.22) transparent; }}
+.col.all .cards {{ max-height: 720px !important; }}
+.card {{ background: var(--glass-card); border: 1px solid var(--edge); border-radius: 6px; padding: 8px 10px 9px; display: flex; flex-direction: column; gap: 5px; min-width: 0; transition: background .12s; flex-shrink: 0; }}
+.card:hover {{ background: var(--glass-hover); }}
+.card h3 {{ font: 700 13.5px/1.3 var(--f-body); margin: 0; text-wrap: balance; overflow-wrap: anywhere; }}
+.txt {{ margin: 0; font-size: 12.5px; color: var(--muted); overflow-wrap: anywhere;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; cursor: pointer; }}
+.card.open .txt {{ -webkit-line-clamp: unset; display: block; }}
+.txt strong {{ color: var(--fg); font-weight: 700; }}
+.txt code, .card h3 code {{ font: 11.5px var(--f-mono); }}
+.wl {{ color: var(--fg); }}
+.chips {{ display: flex; gap: 5px; }}
+.chip {{ font: 500 10.5px/1 var(--f-mono); padding: 3px 6px; border-radius: 3px; color: var(--pc); border: 1px solid var(--pc); background: rgba(0,0,0,.15); letter-spacing: .02em; }}
+.p-web-dev {{ --pc: var(--p-web); }} .p-homelab {{ --pc: var(--p-home); }} .p-personal {{ --pc: var(--p-pers); }}
+.p-meta {{ --pc: var(--p-meta); }} .p-none {{ --pc: var(--p-none); }}
+.chip.id {{ --pc: var(--muted); border-color: transparent; background: none; padding-left: 0; font-variant-numeric: tabular-nums; }}
+.chip.parked {{ --pc: var(--muted); border-style: dashed; }}
+.parked-card {{ opacity: .7; }}
+.card.done {{ background: rgba(22,32,40,.4); }}
+.card.done h3 {{ font-weight: 400; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }}
+.note {{ font: 11px var(--f-mono); color: var(--muted); text-decoration: none; align-self: flex-start; }}
+.note::before {{ content: "→ "; }}
+.note:hover, .note:focus-visible {{ color: var(--fg); text-decoration: underline; }}
+.more {{ all: unset; cursor: pointer; text-align: center; font: 500 11.5px var(--f-mono); color: var(--muted); padding: 6px; border-radius: 5px; border: 1px dashed var(--edge); }}
+.more:hover {{ color: var(--fg); background: rgba(255,255,255,.05); }}
+.more:focus-visible {{ outline: 2px solid var(--lc); }}
+.empty {{ color: var(--muted); font-size: 12.5px; margin: 4px; }}
+@media (max-width: 720px) {{
+  .board {{ grid-template-columns: 1fr; overflow: visible; }}
+  .src {{ margin-left: 0; }}
+}}
+@media (prefers-reduced-motion: reduce) {{ * {{ transition: none !important; }} }}
+</style>
+<!--BODY-->
+<script>document.body.classList.add("{mode}");</script>
+<div class="wrap">
+  <div class="top">
+    <h1>Board</h1>
+    <div class="stats"><span><b>{total}</b> open</span><span><b>{prog}</b> in progress</span><span><b>{wait}</b> waiting</span></div>
+    <span class="src">{source} · updated {updated}</span>
+  </div>
+  <main class="board" id="board">{columns}</main>
+</div>
+<script>
+(function () {{
+  var KEY = "board-state-v1";
+  var mobile = window.matchMedia("(max-width: 720px)");
+  function load() {{ try {{ return JSON.parse(localStorage.getItem(KEY)) || {{}}; }} catch (e) {{ return {{}}; }} }}
+  function save(s) {{ try {{ localStorage.setItem(KEY, JSON.stringify(s)); }} catch (e) {{}} }}
+  var state = load();
+  var view = mobile.matches ? "m" : "d";
+  function apply() {{
+    document.querySelectorAll(".col").forEach(function (col) {{
+      var k = col.dataset.col, s = (state[view] || {{}})[k] || {{}};
+      var folded = s.folded !== undefined ? s.folded : view === "m";
+      col.classList.toggle("folded", folded);
+      col.querySelector(".head").setAttribute("aria-expanded", String(!folded));
+      col.classList.toggle("all", !!s.all);
+      var m = col.querySelector(".more");
+      if (m) {{ m.textContent = s.all ? m.dataset.less : m.dataset.all; m.setAttribute("aria-expanded", String(!!s.all)); }}
+    }});
+    fit();
+    report();
+  }}
+  // Folded-to-3 view: the lane is as tall as its first 3 cards and scrolls for the rest.
+  function fit() {{
+    document.querySelectorAll(".col").forEach(function (col) {{
+      var box = col.querySelector(".cards"), cards = box.querySelectorAll(".card");
+      if (col.classList.contains("folded") || cards.length <= 3) {{ box.style.maxHeight = ""; return; }}
+      var third = cards[2];
+      box.style.maxHeight = (third.offsetTop - box.offsetTop + third.offsetHeight + 2) + "px";
+    }});
+  }}
+  function set(k, patch) {{
+    state[view] = state[view] || {{}};
+    state[view][k] = Object.assign({{}}, state[view][k] || {{}}, patch);
+    save(state); apply();
+  }}
+  function bind() {{
+    document.querySelectorAll(".col").forEach(function (col) {{
+      var k = col.dataset.col;
+      col.querySelector(".head").addEventListener("click", function () {{ set(k, {{ folded: !col.classList.contains("folded") }}); }});
+      var m = col.querySelector(".more");
+      if (m) m.addEventListener("click", function () {{ set(k, {{ all: !col.classList.contains("all") }}); }});
+    }});
+    document.querySelectorAll(".txt").forEach(function (p) {{
+      p.setAttribute("tabindex", "0");
+      function t() {{ p.closest(".card").classList.toggle("open"); fit(); report(); }}
+      p.addEventListener("click", t);
+      p.addEventListener("keydown", function (e) {{ if (e.key === "Enter" || e.key === " ") {{ e.preventDefault(); t(); }} }});
+    }});
+  }}
+  // Tell Homepage how tall the board is, so the iframe fits it (handled by Homepage's custom.js).
+  function report() {{
+    if (window.parent === window) return;
+    try {{ window.parent.postMessage({{ type: "board-height", h: Math.ceil(document.querySelector(".wrap").getBoundingClientRect().height) }}, "*"); }} catch (e) {{}}
+  }}
+  mobile.addEventListener("change", function () {{ view = mobile.matches ? "m" : "d"; apply(); }});
+  window.addEventListener("resize", function () {{ fit(); report(); }});
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () {{ fit(); report(); }});
+  bind(); apply();
+  // Pick up a regenerated board without a full reload (the generator runs every few minutes).
+  var current = document.querySelector('meta[name="board-version"]').content;
+  setInterval(function () {{
+    if (document.hidden || !/^https?:$/.test(location.protocol)) return;
+    fetch(location.href, {{ cache: "no-store" }}).then(function (r) {{ return r.ok ? r.text() : null; }}).then(function (txt) {{
+      if (!txt) return;
+      var doc = new DOMParser().parseFromString(txt, "text/html");
+      var v = doc.querySelector('meta[name="board-version"]');
+      if (!v || v.content === current) return;
+      current = v.content;
+      document.getElementById("board").innerHTML = doc.getElementById("board").innerHTML;
+      document.querySelector(".top").innerHTML = doc.querySelector(".top").innerHTML;
+      bind(); apply();
+    }}).catch(function () {{}});
+  }}, 120000);
+}})();
+</script>

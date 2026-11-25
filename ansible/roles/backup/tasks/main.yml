@@ -1,0 +1,78 @@
+---
+# Daily restic backup to butter. The repository address (`repo`), its password (`repo-pass`)
+# and the ntfy topic are
+# secrets: they are not in git and have to be put back by hand (docs/restore.md) first.
+- name: Restic package
+  ansible.builtin.apt:
+    name: restic
+    state: present
+
+- name: Restic config directory
+  ansible.builtin.file:
+    path: /root/.config/restic
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+
+- name: What gets backed up and what is skipped
+  ansible.builtin.copy:
+    src: "{{ host_files }}/root/.config/restic/{{ item }}"
+    dest: "/root/.config/restic/{{ item }}"
+    owner: root
+    group: root
+    mode: "0600"
+  loop:
+    - paths
+    - excludes
+
+- name: Look for the restic secrets
+  ansible.builtin.stat:
+    path: "/root/.config/restic/{{ item }}"
+  loop:
+    - repo
+    - repo-pass
+  register: backup_secrets
+
+- name: Restic secrets are in place
+  ansible.builtin.assert:
+    that: item.stat.exists
+    fail_msg: >-
+      /root/.config/restic/{{ item.item }} is missing. Put it back from the password manager
+      before running this again (docs/restore.md).
+    quiet: true
+  loop: "{{ backup_secrets.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+
+- name: Backup scripts
+  ansible.builtin.copy:
+    src: "{{ host_files }}/usr/local/bin/{{ item.name }}"
+    dest: "/usr/local/bin/{{ item.name }}"
+    owner: root
+    group: root
+    mode: "{{ item.mode }}"
+  loop:
+    - { name: restic-backup.sh, mode: "0750" }
+    - { name: backup_crafty.sh, mode: "0755" }
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Restic service and timer
+  ansible.builtin.copy:
+    src: "{{ host_files }}/etc/systemd/system/{{ item }}"
+    dest: "/etc/systemd/system/{{ item }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop:
+    - restic-backup.service
+    - restic-backup.timer
+  register: backup_units
+
+- name: Daily backup timer enabled
+  ansible.builtin.systemd_service:
+    name: restic-backup.timer
+    enabled: "{{ not restore_test }}"
+    state: "{{ 'stopped' if restore_test else 'started' }}"
+    daemon_reload: "{{ backup_units is changed }}"

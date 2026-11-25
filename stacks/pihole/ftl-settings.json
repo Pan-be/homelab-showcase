@@ -1,0 +1,21 @@
+{
+  "dns.upstreams": [
+    "8.8.8.8",
+    "8.8.4.4"
+  ],
+  "dns.hosts": [
+    "192.0.2.50 pihole.home.arpa",
+    "192.0.2.50 home.arpa",
+    "192.0.2.50 crafty.home.arpa",
+    "192.0.2.50 private-app.home.arpa",
+    "192.0.2.50 pan-be.home.arpa",
+    "192.0.2.50 kalorie.home.arpa"
+  ],
+  "dns.cnameRecords": [],
+  "dns.revServers": [],
+  "dns.domain.name": "lan",
+  "misc.dnsmasq_lines": [
+    "address=/home.example.com/192.0.2.50"
+  ],
+  "dhcp.active": false
+}

@@ -1,0 +1,8 @@
+[Unit]
+Description=08:00 morning summary (media upkeep + vault tidy + Pan-be) as one ntfy push
+After=network-online.target
+
+[Service]
+Type=oneshot
+Environment=TZ=Europe/Warsaw
+ExecStart=/usr/bin/python3 -I %h/dev/vault-tidy/morning.py

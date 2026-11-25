@@ -1,0 +1,14 @@
+# Rebuildable or not worth keeping
+/opt/containerd
+/opt/jellyfin/jellyfin-cache
+/opt/pihole/etc-pihole/pihole-FTL.db*
+/home/admin/.cache
+/home/admin/.rustup
+/home/admin/.cargo
+/home/admin/.local/share/claude
+/home/admin/yazi
+/home/admin/backups
+# Live Minecraft data: taken from the Crafty snapshot instead (consistent copy)
+/home/admin/crafty
+# Crafty's own ZIP backups inside the snapshot (duplicates)
+/mnt/storage/crafty-backups/snapshots/*/backups

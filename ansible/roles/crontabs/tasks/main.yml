@@ -1,0 +1,29 @@
+---
+# Crontabs are installed with `crontab`, never by writing into /var/spool/cron, and only when
+# the live one differs from host/crontab/<user>.
+- name: Read the live crontabs
+  ansible.builtin.command: crontab -l -u {{ item }}
+  loop: ["{{ admin_user }}", root]
+  register: crontabs_live
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Install crontabs that differ from the repo
+  ansible.builtin.command: crontab -u {{ item.item }} {{ host_files }}/crontab/{{ item.item }}
+  loop: "{{ crontabs_live.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+  when: item.stdout != lookup('ansible.builtin.file', host_files ~ '/crontab/' ~ item.item)
+  changed_when: true
+
+- name: Report crontabs that differ (check mode skips the install above)
+  ansible.builtin.debug:
+    msg: "crontab of {{ item.item }} differs from host/crontab/{{ item.item }}"
+  loop: "{{ crontabs_live.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+  when:
+    - ansible_check_mode
+    - item.stdout != lookup('ansible.builtin.file', host_files ~ '/crontab/' ~ item.item)
+  changed_when: true

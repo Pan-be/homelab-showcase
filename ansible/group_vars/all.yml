@@ -1,0 +1,103 @@
+---
+admin_user: admin
+# true only inside the throwaway restore-test VM (scripts/test-vm.sh): keeps the VM's own
+# network, leaves out the physical-disk fstab lines (their mount units would block Docker's
+# RequiresMountsFor) and creates the bind-mount sources on its root disk, and leaves out everything that
+# would act as the real Serverus (restic backups into the real repo, cron jobs such as the
+# private-app runners, user services such as JARVIS).
+restore_test: false
+admin_home: /home/admin
+# Files collected from the live host by scripts/collect.sh; the roles install them as they are.
+host_files: "{{ playbook_dir }}/../host"
+
+timezone: Etc/UTC
+
+base_packages:
+  - curl
+  - git
+  - jq
+  - rsync
+  - tmux
+  - vim
+  - htop
+  - ncdu
+  - zstd
+  - ffmpeg
+  - python3-pip
+  - mdadm
+  - smartmontools
+  - sysstat
+  - thermald
+  - unattended-upgrades
+  # Kalorie / PHP tooling on the host
+  - composer
+  - php-cli
+  - php-curl
+  - php-intl
+  - php-mbstring
+  - php-zip
+
+base_services:
+  - sysstat
+  - unattended-upgrades
+# Need real hardware (disk SMART, CPU thermals): on a VM they are enabled but stay inactive.
+base_hw_services:
+  - smartmontools
+  - thermald
+
+# Data disks keep their UUIDs across an OS reinstall; / and /boot are left to the installer.
+# Lines are kept byte-for-byte as in the live fstab, matched by mount point.
+fstab_entries:
+  - path: /mnt/storage
+    disk: true
+    line: "UUID=<uuid>  /mnt/storage  ext4  defaults,nofail  0  2"
+  - path: /srv/nvme
+    disk: true
+    line: "UUID=<uuid>  /srv/nvme  ext4  defaults,nofail  0  2"
+  - path: /opt
+    line: "/srv/nvme/opt /opt none bind,nofail,x-systemd.requires-mounts-for=/srv/nvme 0 0"
+  - path: /home/admin/crafty
+    line: "/srv/nvme/crafty /home/admin/crafty none bind,nofail,x-systemd.requires-mounts-for=/srv/nvme 0 0"
+
+# RAID1 for /mnt/storage (running on one disk until the replacement arrives).
+mdadm_array: "ARRAY /dev/md0 metadata=1.2 UUID=<uuid>"
+
+docker_packages:
+  - docker-ce
+  - docker-ce-cli
+  - containerd.io
+  - docker-buildx-plugin
+  - docker-compose-plugin
+# Networks the compose stacks declare as `external: true`.
+docker_external_networks:
+  - caddy_net
+
+tailscale_up_flags: "--advertise-routes=192.0.2.50/32 --accept-dns=true"
+
+user_units:
+  - jarvis-web
+  - kalorie-ai
+  - localsend
+  # Spotify Connect receiver "Serverus" (binary in ~/.local/bin, API key in
+  # ~/.config/soloist/soloist.env: both come back with the /home restore, never in git).
+  - soloist
+
+# Oneshot user services started by a user timer (the timer is what gets enabled).
+# board: rebuilds the priorities board from the vault; code in ~/dev/board (comes back with the /home restore).
+user_timers:
+  - board
+  # soloist-update: weekly refresh of the Soloist build (builds expire after 90 days).
+  - soloist-update
+  # vault-tidy: nightly 03:30 (Europe/Warsaw) board + vault lint run, headless Claude; code in ~/dev/vault-tidy.
+  - vault-tidy
+  # morning-summary: 08:00 (Europe/Warsaw) one ntfy push with last night's media upkeep + vault tidy + Pan-be;
+  # code in ~/dev/vault-tidy/morning.py, topic in ~/.config/media-maintenance/ntfy_topic (both from /home restore).
+  - morning-summary
+
+# Drop-ins for user units (<unit>.service.d/<file>). claude-token.conf loads the long-lived Claude token from
+# ~/.config/claude/oauth-token.env (secret, comes back with the /home restore, never in git); the `-` prefix
+# in EnvironmentFile keeps the unit starting when the file is missing (it then falls back to ~/.claude).
+user_unit_dropins:
+  - { unit: jarvis-web, file: proxied-hosts.conf }
+  - { unit: jarvis-web, file: claude-token.conf }
+  - { unit: kalorie-ai, file: claude-token.conf }

@@ -1,0 +1,39 @@
+services:
+  homepage:
+    image: ghcr.io/gethomepage/homepage:v2.7.0 # pinned 2026-10-01 (was :latest = v1.10.1)
+    container_name: homepage
+    ports:
+      - 3000:3000
+    env_file: .env
+    volumes:
+      - ./config:/app/config # Make sure your local config directory exists
+      - ./images:/app/public/images
+      # Docker socket removed 2026-10-01: Homepage reads container status through dockerproxy (read-only API)
+    environment:
+      HOMEPAGE_ALLOWED_HOSTS: home.arpa,home.example.com # required, may need port. See gethomepage.dev/installation/#homepage_allowed_hosts
+    restart: unless-stopped
+    depends_on:
+      - dockerproxy
+    networks:
+      - caddy_net
+      - homepage_internal
+
+  # Read-only Docker API for Homepage status dots (added 2026-10-01).
+  # Only container listing/inspect/stats are allowed; POST (start/stop/exec) is denied.
+  dockerproxy:
+    image: tecnativa/docker-socket-proxy:v0.5.0
+    container_name: homepage-dockerproxy
+    environment:
+      CONTAINERS: 1
+      POST: 0
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    restart: unless-stopped
+    networks:
+      - homepage_internal
+
+networks:
+  caddy_net:
+    external: true
+  homepage_internal:
+    internal: true

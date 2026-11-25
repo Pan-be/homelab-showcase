@@ -1,0 +1,26 @@
+---
+# For configuration options and examples, please see:
+# https://gethomepage.dev/configs/settings/
+title: Center
+background:
+  image: /images/bg.jpg   
+  blur: sm # sm, md, xl... see https://tailwindcss.com/docs/backdrop-blur
+  saturate: 100 # 0, 50, 100... see https://tailwindcss.com/docs/backdrop-saturate
+  brightness: 50 # 0, 50, 75... see https://tailwindcss.com/docs/backdrop-brightness
+  opacity: 100 # 0-100
+providers:
+  openweathermap: openweathermapapikey
+  weatherapi: weatherapiapikey
+
+theme: dark
+color: slate
+
+useEqualHeights: true
+
+layout:
+  Board:
+    style: row
+    columns: 1
+    header: false
+  style: row
+  columns: 3

@@ -1,0 +1,53 @@
+name: larapaper
+
+# LaraPaper: self-hosted TRMNL server (BYOS) for the Kindle dashboard.
+# No published port: reached only through Caddy (trmnl.home.example.com, LAN + tailnet).
+# Upstream compose: https://github.com/usetrmnl/larapaper/blob/0.46.0/docker/prod/docker-compose.yml
+
+services:
+  app:
+    container_name: larapaper
+    image: ghcr.io/usetrmnl/larapaper:0.46.0
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      PHP_OPCACHE_ENABLE: "1"
+      DB_DATABASE: database/storage/database.sqlite
+      APP_URL: https://trmnl.home.example.com
+      FORCE_HTTPS: "true"
+      TRUSTED_PROXIES: "*"
+      MULTIUSER_REGISTRATION_ENABLED: "false"
+      PASSKEYS_ENABLED: "false"
+    volumes:
+      - database:/var/www/html/database/storage
+      - generated:/var/www/html/storage/app/public/images/generated
+    networks:
+      - caddy_net
+    security_opt:
+      - no-new-privileges:true
+
+  # Static ICS feeds made on Serverus (waste collection: feeds/calendar-a-ics.py, daily cron).
+  # Only LaraPaper reads them, inside caddy_net: http://kindle-feeds/calendar-a.ics. No published port.
+  feeds:
+    container_name: kindle-feeds
+    image: nginx:1.30.6-alpine
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx
+      - /var/run
+    volumes:
+      - ./feeds/www:/usr/share/nginx/html:ro
+    networks:
+      - caddy_net
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  database:
+  generated:
+
+networks:
+  caddy_net:
+    external: true

@@ -1,0 +1,15 @@
+---
+- name: Update initramfs
+  ansible.builtin.command: update-initramfs -u
+  changed_when: true
+
+- name: Reload systemd for fstab
+  ansible.builtin.systemd_service:
+    daemon_reload: true
+  listen: Mount all
+
+# ansible.posix.mount would need an extra collection; fstab is already managed line by line.
+- name: Mount everything in fstab  # noqa: command-instead-of-module
+  ansible.builtin.command: mount -a
+  changed_when: true
+  listen: Mount all

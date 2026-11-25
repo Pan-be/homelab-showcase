@@ -1,0 +1,243 @@
+{
+    admin localhost:2019
+}
+
+# Read-only window into the admin API for Homepage's Caddy widget.
+# Not published on the host; full admin API stays on localhost.
+http://:2020 {
+    @upstreams {
+        method GET
+        path /reverse_proxy/upstreams
+    }
+    handle @upstreams {
+        reverse_proxy localhost:2019 {
+            header_up Host localhost:2019
+        }
+    }
+    respond 403
+}
+
+
+# Tailnet clients that are not Konrad's own devices (a friend's shared-in devices, sony-tv):
+# Private app only, every other site is aborted. Konrad's devices: zingy, iPhone, serverus,
+# garlic, butter. A new own device must be added here too, or it only gets Private app.
+(tailnet_guest) {
+    @guest {
+        remote_ip 100.64.0.0/10 fd7a:115c:a1e0::/48
+        not remote_ip 100.64.0.42 100.64.0.43 100.64.0.41 100.64.0.30 100.64.0.20
+    }
+}
+
+(no_guests) {
+    import tailnet_guest
+    abort @guest
+}
+
+pihole.home.arpa {
+    import no_guests
+    reverse_proxy pihole:80
+    tls internal
+}
+
+home.arpa {
+    import no_guests
+    reverse_proxy homepage:3000
+    tls internal
+}
+
+crafty.home.arpa {
+    import no_guests
+    reverse_proxy https://192.0.2.50:8443 {
+        # Caddy 2.11.1+ rewrites Host to the upstream for HTTPS upstreams;
+        # Crafty's websocket (Tornado origin check) needs the original Host.
+        header_up Host {host}
+        transport http {
+            tls_insecure_skip_verify
+        }
+    }
+}
+
+private-app.home.arpa {
+   reverse_proxy private-app:80
+   tls internal
+}
+
+pan-be.home.arpa {
+    import no_guests
+    reverse_proxy pan-be-wp:80
+    tls internal
+}
+
+kalorie.home.arpa {
+    import no_guests
+    reverse_proxy kalorie-nginx:80
+    tls internal
+}
+
+# Real names with Let's Encrypt via DNS-01 on Cloudflare (example.com zone,
+# token limited to DNS edit on that zone). A records point at the Tailscale IP,
+# so these work only on the tailnet. One wildcard cert keeps service names out
+# of CT logs.
+# pan-be staging stays on pan-be.home.arpa (WP siteurl + tools/publish.sh).
+home.example.com, *.home.example.com {
+    tls {
+        dns cloudflare {env.CF_API_TOKEN}
+        resolvers 9.9.9.9 1.1.1.1
+    }
+
+    # Guests (see the tailnet_guest snippet): Private app only.
+    import tailnet_guest
+    handle @guest {
+        @guest_private-app host private-app.home.example.com
+        handle @guest_private-app {
+            reverse_proxy private-app:80
+        }
+        handle {
+            abort
+        }
+    }
+
+    @home host home.example.com
+    handle @home {
+        reverse_proxy homepage:3000
+    }
+
+    @pihole host pihole.home.example.com
+    handle @pihole {
+        reverse_proxy pihole:80
+    }
+
+    @private-app host private-app.home.example.com
+    handle @private-app {
+        reverse_proxy private-app:80
+    }
+
+    @kalorie host kalorie.home.example.com
+    handle @kalorie {
+        reverse_proxy kalorie-nginx:80
+    }
+
+    @crafty host crafty.home.example.com
+    handle @crafty {
+        reverse_proxy https://192.0.2.50:8443 {
+            header_up Host {host}
+            transport http {
+                tls_insecure_skip_verify
+            }
+        }
+    }
+
+    @bookorbit host bookorbit.home.example.com
+    handle @bookorbit {
+        # Tailscale + the whole home LAN (BookOrbit has its own login)
+        @allowed remote_ip 100.64.0.0/10 192.0.2.0/24
+        handle @allowed {
+            encode zstd gzip
+            reverse_proxy bookorbit-app:3000
+        }
+        handle {
+            abort
+        }
+    }
+
+    @keys host keys.home.example.com
+    handle @keys {
+        # Tailscale + reserved LAN IPs: zingy Wi-Fi .203, iPhone .172
+        @allowed remote_ip 100.64.0.0/10 192.0.2.203/32 192.0.2.172/32
+        handle @allowed {
+            encode zstd gzip
+            reverse_proxy vaultwarden:8080
+        }
+        handle {
+            abort
+        }
+    }
+
+    @board host board.home.example.com
+    handle @board {
+        # Tailscale + the whole home LAN (read-only priorities board, shown on Homepage)
+        @allowed remote_ip 100.64.0.0/10 192.0.2.0/24
+        handle @allowed {
+            encode zstd gzip
+            reverse_proxy board:80
+        }
+        handle {
+            abort
+        }
+    }
+
+    @trmnl host trmnl.home.example.com
+    handle @trmnl {
+        # LaraPaper (TRMNL server for the Kindle dashboard). Tailscale + the whole home LAN
+        # (the Kindle is on Wi-Fi; LaraPaper has its own login, devices use per-device API keys)
+        @allowed remote_ip 100.64.0.0/10 192.0.2.0/24
+        handle @allowed {
+            encode zstd gzip
+            reverse_proxy larapaper:8080
+        }
+        handle {
+            abort
+        }
+    }
+
+    @ha host ha.home.example.com
+    handle @ha {
+        # Home Assistant (host network on Serverus). Tailscale + the whole home LAN
+        # (family uses HA; HA has its own login). HA trusts caddy_net as proxy.
+        @allowed remote_ip 100.64.0.0/10 192.0.2.0/24
+        handle @allowed {
+            reverse_proxy 192.0.2.50:8123
+        }
+        handle {
+            abort
+        }
+    }
+
+    @cam host cam.home.example.com
+    handle @cam {
+        # go2rtc (#74, /opt/go2rtc, host network on Serverus): the iPhone 6s's Safari
+        # publishes camera + mic here (getUserMedia needs HTTPS). No login of its own,
+        # so tailnet + home LAN only, like HA.
+        @allowed remote_ip 100.64.0.0/10 192.0.2.0/24
+        handle @allowed {
+            reverse_proxy 192.0.2.50:1984
+        }
+        handle {
+            abort
+        }
+    }
+
+    @jarek host jarek.home.example.com
+    handle @jarek {
+        # J.A.R.E.K. web chat (jarvis-web on the Tailscale IP). Tailnet membership is its auth,
+        # so only Tailscale + Konrad's reserved LAN IPs (zingy Wi-Fi .203, iPhone .172), as for keys.
+        # jarvis-web accepts this name via JARVIS_WEB_PROXIED_HOSTS (Origin must be https://<name>).
+        @allowed remote_ip 100.64.0.0/10 192.0.2.203/32 192.0.2.172/32
+        handle @allowed {
+            reverse_proxy 100.64.0.41:8765 {
+                flush_interval -1
+            }
+        }
+        handle {
+            abort
+        }
+    }
+
+    @garlic host garlic.home.example.com
+    handle @garlic {
+        # Forgejo on garlic (T61). Tailscale + the whole home LAN (Forgejo has its own login).
+        # Web only: git over SSH stays on the forgejo-garlic alias (LAN .51 / tailnet :2222).
+        @allowed remote_ip 100.64.0.0/10 192.0.2.0/24
+        handle @allowed {
+            encode zstd gzip
+            reverse_proxy 192.0.2.51:3000
+        }
+        handle {
+            abort
+        }
+    }
+
+    handle {
+        abort
+    }
+}

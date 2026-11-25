@@ -1,0 +1,11 @@
+[Unit]
+Description=restic backup of Serverus to butter
+Wants=network-online.target
+After=network-online.target tailscaled.service docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/restic-backup.sh
+Nice=10
+IOSchedulingClass=idle
+PrivateTmp=yes

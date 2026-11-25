@@ -1,0 +1,46 @@
+---
+# The disks themselves (RAID members, NVMe) are not formatted here: they keep their data and
+# UUIDs across an OS reinstall. This only makes the system find and mount them again.
+- name: RAID array known to mdadm
+  ansible.builtin.lineinfile:
+    path: /etc/mdadm/mdadm.conf
+    regexp: '^ARRAY /dev/md0 '
+    line: "{{ mdadm_array }}"
+  notify: Update initramfs
+
+# No owner/mode on purpose: once mounted, these are the roots of the mounted filesystems, and
+# their ownership belongs to the data (e.g. /home/admin/crafty is admin 775).
+- name: Mount points exist  # noqa: risky-file-permissions
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+  loop: "{{ fstab_entries }}"
+  loop_control:
+    label: "{{ item.path }}"
+
+- name: Bind mount sources on the root disk (restore test only, no NVMe there)
+  ansible.builtin.file:
+    path: "{{ item.line.split()[0] }}"
+    state: directory
+    mode: "0755"
+  loop: "{{ fstab_entries | selectattr('line', 'search', ' none bind') | list }}"
+  loop_control:
+    label: "{{ item.line.split()[0] }}"
+  when: restore_test
+
+- name: Data disks and bind mounts in fstab
+  ansible.builtin.lineinfile:
+    path: /etc/fstab
+    regexp: '^\S+\s+{{ item.path | regex_escape }}\s'
+    line: "{{ item.line }}"
+    # The restore-test VM has no such disks: leave their lines out there.
+    state: "{{ 'absent' if (restore_test and item.disk | default(false)) else 'present' }}"
+  loop: "{{ fstab_entries }}"
+  loop_control:
+    label: "{{ item.path }}"
+  notify: Mount all
+
+# Mount now, not at the end of the play: Docker's data root lives on the NVMe, and starting
+# Docker before /srv/nvme is mounted would put its data on the root disk.
+- name: Mount the disks before Docker starts
+  ansible.builtin.meta: flush_handlers

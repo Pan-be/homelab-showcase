@@ -1,0 +1,10 @@
+[Unit]
+Description=Rebuild the priorities board every 5 minutes
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+Unit=board.service
+
+[Install]
+WantedBy=timers.target

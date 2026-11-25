@@ -1,0 +1,25 @@
+# Vaultwarden (Bitwarden-compatible) on keys.home.example.com, behind Caddy.
+# No published ports: reachable only through Caddy, which allows Tailscale
+# and Konrad's reserved LAN addresses. No ADMIN_TOKEN = admin panel disabled.
+services:
+  vaultwarden:
+    image: vaultwarden/server:1.37.4
+    container_name: vaultwarden
+    restart: unless-stopped
+    user: "1000:1000"
+    environment:
+      DOMAIN: "https://keys.home.example.com"
+      SIGNUPS_ALLOWED: "false"  # closed 2026-10-19 after Konrad's account
+      INVITATIONS_ALLOWED: "false"
+      SHOW_PASSWORD_HINT: "false"
+      IP_HEADER: "X-Forwarded-For"
+      ROCKET_PORT: "8080"       # non-root can't bind 80
+      TZ: "Europe/Warsaw"
+    volumes:
+      - ./data:/data
+    networks:
+      - caddy_net
+
+networks:
+  caddy_net:
+    external: true

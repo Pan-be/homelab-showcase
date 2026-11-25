@@ -1,0 +1,7 @@
+/etc
+/var/spool/cron
+/usr/local/bin
+/opt
+/srv/nvme/docker/volumes
+/gluetun
+/home/admin

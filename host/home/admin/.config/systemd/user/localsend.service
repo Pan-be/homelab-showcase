@@ -1,0 +1,17 @@
+# LocalSend receiver: localsend-cli (a TUI) in tmux, so prompts can still be answered.
+# Own tmux socket (-L localsend) so systemd tracks only this server, not the default one.
+# Attach: tmux -L localsend attach -t localsend
+# Answer a prompt: tmux -L localsend send-keys -t localsend y
+[Unit]
+Description=LocalSend receiver into ~/inbox (tmux -L localsend)
+After=network-online.target
+
+[Service]
+Type=forking
+ExecStart=/usr/bin/tmux -L localsend new-session -d -s localsend -x 120 -y 30 %h/.local/bin/localsend-cli --alias Serverus --destination %h/inbox
+ExecStop=/usr/bin/tmux -L localsend kill-server
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target

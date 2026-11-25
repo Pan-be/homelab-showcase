@@ -1,0 +1,5 @@
+# Serverus configures itself: bootstrap.sh runs on the machine being (re)built.
+all:
+  hosts:
+    serverus:
+      ansible_connection: local

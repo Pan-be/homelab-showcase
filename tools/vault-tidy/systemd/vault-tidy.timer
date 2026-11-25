@@ -1,0 +1,10 @@
+[Unit]
+Description=Run the vault tidy every night at 03:30
+
+[Timer]
+OnCalendar=*-*-* 03:30:00 Europe/Warsaw
+Persistent=true
+Unit=vault-tidy.service
+
+[Install]
+WantedBy=timers.target

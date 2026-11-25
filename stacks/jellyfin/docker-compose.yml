@@ -1,0 +1,16 @@
+services:
+  jellyfin:
+    image: jellyfin/jellyfin:12.4
+    container_name: jellyfin
+    user: 1000:1000
+    ports:
+      - 8096:8096/tcp
+      # - 7359:7359/udp
+    volumes:
+      - ./jellyfin-config:/config
+      - ./jellyfin-cache:/cache
+      - ${DATA_LOCATION}:/data
+    restart: 'unless-stopped'
+    environment:
+      - TZ=${TIMEZONE}
+      - /dev/dri:/dev/dri

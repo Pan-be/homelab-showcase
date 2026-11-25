@@ -1,0 +1,10 @@
+#!/bin/sh
+# mdadm PROGRAM hook: $1 = event, $2 = md device, $3 = component (optional)
+topic=$(cat /etc/mdadm/ntfy_topic 2>/dev/null)
+[ -n "$topic" ] || exit 0
+case "$1" in
+  Fail|FailSpare|DegradedArray|DeviceDisappeared) prio=urgent ;;
+  *) prio=default ;;
+esac
+curl -fsS -m 15 -H "Title: Serverus RAID: $1 $2" -H "Priority: $prio" \
+  -d "mdadm: $1 on $2${3:+ ($3)}" "https://ntfy.sh/$topic" >/dev/null

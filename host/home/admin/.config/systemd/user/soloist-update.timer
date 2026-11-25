@@ -1,0 +1,10 @@
+[Unit]
+Description=Weekly Spotify Soloist refresh
+
+[Timer]
+OnCalendar=Mon *-*-* 04:30:00
+RandomizedDelaySec=1h
+Persistent=true
+
+[Install]
+WantedBy=timers.target

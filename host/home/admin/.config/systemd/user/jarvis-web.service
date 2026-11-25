@@ -1,0 +1,17 @@
+[Unit]
+Description=JARVIS web chat (Tailscale-only)
+Documentation=https://github.com/Pan-be/jarvis
+# Keep retrying while Tailscale has no IP yet (jarvis_web.py refuses to start without one).
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+WorkingDirectory=%h/jarvis-core
+Environment=PATH=%h/.local/bin:/usr/local/bin:/usr/bin:/bin
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/usr/bin/python3 %h/jarvis-core/jarvis_web.py
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=default.target

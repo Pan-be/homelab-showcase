@@ -1,0 +1,11 @@
+[Unit]
+Description=Nightly vault tidy (board columns + vault lint) via headless Claude
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=%h/dev/vault-tidy/run.sh
+TimeoutStartSec=50min
+Environment=TZ=Europe/Warsaw
+# optional long-lived token from `claude setup-token` (CLAUDE_CODE_OAUTH_TOKEN=...), chmod 600, Konrad creates it
+EnvironmentFile=-%h/.config/claude/oauth-token.env

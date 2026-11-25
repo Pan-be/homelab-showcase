@@ -1,0 +1,6 @@
+[Unit]
+Description=Rebuild the priorities board from the vault
+
+[Service]
+Type=oneshot
+ExecStart=%h/dev/board/build.sh

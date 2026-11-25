@@ -1,0 +1,82 @@
+---
+# User services run under the admin user with lingering on, so they start at boot without a
+# login. Their code (~/jarvis-core, /opt/kalorie, ~/.local/bin) comes back with the backup.
+- name: Lingering for the admin user
+  ansible.builtin.command: loginctl enable-linger {{ admin_user }}
+  args:
+    creates: "/var/lib/systemd/linger/{{ admin_user }}"
+
+- name: User unit directories
+  ansible.builtin.file:
+    path: "{{ admin_home }}/{{ item.path }}"
+    state: directory
+    owner: "{{ admin_user }}"
+    group: "{{ admin_user }}"
+    mode: "{{ item.mode }}"
+  loop:
+    - { path: .config/systemd/user, mode: "0775" }
+    - { path: .config/systemd/user/default.target.wants, mode: "0755" }
+    - { path: .config/systemd/user/timers.target.wants, mode: "0755" }
+  loop_control:
+    label: "{{ item.path }}"
+
+- name: User unit files
+  ansible.builtin.copy:
+    src: "{{ host_files }}{{ admin_home }}/.config/systemd/user/{{ item }}.service"
+    dest: "{{ admin_home }}/.config/systemd/user/{{ item }}.service"
+    owner: "{{ admin_user }}"
+    group: "{{ admin_user }}"
+    mode: "0664"
+  loop: "{{ user_units }}"
+
+- name: User unit drop-in directories
+  ansible.builtin.file:
+    path: "{{ admin_home }}/.config/systemd/user/{{ item }}.service.d"
+    state: directory
+    owner: "{{ admin_user }}"
+    group: "{{ admin_user }}"
+    mode: "0775"
+  loop: "{{ user_unit_dropins | map(attribute='unit') | unique | list }}"
+
+- name: User unit drop-ins
+  ansible.builtin.copy:
+    src: "{{ host_files }}{{ admin_home }}/.config/systemd/user/{{ item.unit }}.service.d/{{ item.file }}"
+    dest: "{{ admin_home }}/.config/systemd/user/{{ item.unit }}.service.d/{{ item.file }}"
+    owner: "{{ admin_user }}"
+    group: "{{ admin_user }}"
+    mode: "0664"
+  loop: "{{ user_unit_dropins }}"
+  loop_control:
+    label: "{{ item.unit }}/{{ item.file }}"
+
+# Same symlink `systemctl --user enable` makes; done directly so no user session bus is needed.
+- name: User units enabled
+  when: not restore_test
+  ansible.builtin.file:
+    src: "{{ admin_home }}/.config/systemd/user/{{ item }}.service"
+    dest: "{{ admin_home }}/.config/systemd/user/default.target.wants/{{ item }}.service"
+    state: link
+    owner: "{{ admin_user }}"
+    group: "{{ admin_user }}"
+    force: true
+  loop: "{{ user_units }}"
+
+- name: Timer-driven user units (service + timer)
+  ansible.builtin.copy:
+    src: "{{ host_files }}{{ admin_home }}/.config/systemd/user/{{ item.0 }}.{{ item.1 }}"
+    dest: "{{ admin_home }}/.config/systemd/user/{{ item.0 }}.{{ item.1 }}"
+    owner: "{{ admin_user }}"
+    group: "{{ admin_user }}"
+    mode: "0664"
+  loop: "{{ user_timers | product(['service', 'timer']) | list }}"
+
+- name: User timers enabled
+  when: not restore_test
+  ansible.builtin.file:
+    src: "{{ admin_home }}/.config/systemd/user/{{ item }}.timer"
+    dest: "{{ admin_home }}/.config/systemd/user/timers.target.wants/{{ item }}.timer"
+    state: link
+    owner: "{{ admin_user }}"
+    group: "{{ admin_user }}"
+    force: true
+  loop: "{{ user_timers }}"

@@ -1,0 +1,110 @@
+---
+# For configuration options and examples, please see:
+# https://gethomepage.dev/configs/services/
+- Board:
+    - Priorities:
+        id: board
+        widget:
+          type: iframe
+          name: board
+          src: https://board.home.example.com/embed.html
+          classes: h-[560px]
+          allowScrolling: "no"
+          loadingStrategy: eager
+
+- Media:
+    - Jellyfin:
+        server: my-docker
+        container: jellyfin
+        icon: jellyfin.png
+        href: http://192.0.2.50:8096
+        widget:
+         type: jellyfin
+         url: http://192.0.2.50:8096
+         key: "{{HOMEPAGE_VAR_JELLYFIN_KEY}}"
+         version: 2 # optional, default is 1
+         enableBlocks: true # optional, defaults to false
+         enableNowPlaying: true # optional, defaults to true
+         enableUser: true # optional, defaults to false
+         enableMediaControl: false # optional, defaults to true
+         showEpisodeNumber: true # optional, defaults to false
+    - BookOrbit:
+        server: my-docker
+        container: bookorbit-app
+        icon: mdi-book-open-page-variant
+        href: https://bookorbit.home.example.com
+        description: Biblioteka e-booków
+        widgets:
+          - type: customapi
+            url: http://bookorbit-stats:8080/overview
+            refreshInterval: 60000
+            mappings:
+              - field: totalBooks
+                label: Książki
+                format: number
+              - field: readingNow
+                label: Czytam
+                format: number
+              - field: goal
+                label: Przeczytane w roku
+              - field: currentStreak
+                label: Passa (dni)
+                format: number
+          - type: customapi
+            url: http://bookorbit-stats:8080/reading
+            refreshInterval: 60000
+            display: dynamic-list
+            mappings:
+              name: title
+              label: progress
+              limit: 5
+- Services:
+    - Crafty:
+        server: my-docker
+        container: crafty
+        icon: /images/crafty.png
+        href: https://crafty.home.example.com
+    - Minecraft:
+        icon: minecraft.png
+        widget:
+          type: minecraft
+          url: http://192.0.2.50:25565
+    - Private app:
+        server: my-docker
+        container: private-app-php
+        icon: mdi-chess-king
+        href: https://private-app.home.example.com
+- Admin:
+    - Dockge:
+        server: my-docker
+        container: dockge
+        icon: dockge.png
+        href: http://192.0.2.50:5001
+        widget:
+    - Uptime Kuma:
+        server: my-docker
+        container: uptime-kuma
+        icon: uptime-kuma.png
+        href: http://192.0.2.50:3001
+        widget:
+          type: uptimekuma
+          url: http://192.0.2.50:3001
+          slug: uptimekuma
+    - Pihole:
+        server: my-docker
+        container: pihole
+        icon: pi-hole.png
+        href: https://pihole.home.example.com/admin
+        widget:
+          type: pihole
+          url: http://pihole:80
+          version: 6 # required if running v6 or higher, defaults to 5
+          key: "{{HOMEPAGE_VAR_PIHOLE_KEY}}"
+    - Caddy:
+        server: my-docker
+        container: caddy
+        icon: caddy.png
+        widget:
+          type: caddy
+          url: http://caddy:2020
+

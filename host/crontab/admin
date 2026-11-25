@@ -1,0 +1,2 @@
+# Placeholder in the public showcase: the real crontab of admin is not published.
+# The crontabs role installs host/crontab/<user> with `crontab` only when the live one differs.

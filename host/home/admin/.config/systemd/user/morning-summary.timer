@@ -1,0 +1,10 @@
+[Unit]
+Description=Send the morning summary at 08:00
+
+[Timer]
+OnCalendar=*-*-* 08:00:00 Europe/Warsaw
+Persistent=true
+Unit=morning-summary.service
+
+[Install]
+WantedBy=timers.target

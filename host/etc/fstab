@@ -1,0 +1,20 @@
+# /etc/fstab: static file system information.
+#
+# Use 'blkid' to print the universally unique identifier for a
+# device; this may be used with UUID= as a more robust way to name devices
+# that works even if disks are added and removed. See fstab(5).
+#
+# <file system> <mount point>   <type>  <options>       <dump>  <pass>
+# / was on /dev/ubuntu-vg/ubuntu-lv during curtin installation
+/dev/disk/by-id/dm-uuid-LVM-JrFK6xc5laHAuhYMyhJg5ykiDyUjN0vqJGlbDCcPjQJKjCI5veeea38jPraAfb3w / ext4 defaults 0 1
+# /boot was on /dev/sda2 during curtin installation
+/dev/disk/by-uuid/643dc854-1723-4c73-a0aa-3099538e0d35 /boot ext4 defaults 0 1
+# /boot/efi was on /dev/sda1 during curtin installation
+/dev/disk/by-uuid/1D14-F1E8 /boot/efi vfat defaults 0 1
+/swap.img	none	swap	sw	0	0
+# UUID=<uuid>  /backup  ext4  defaults,noatime  0  2
+UUID=<uuid>  /mnt/storage  ext4  defaults,nofail  0  2
+UUID=<uuid>  /srv/nvme  ext4  defaults,nofail  0  2
+# NVMe migration 2026-10-07: app data lives on the NVMe, bound to the old paths
+/srv/nvme/opt /opt none bind,nofail,x-systemd.requires-mounts-for=/srv/nvme 0 0
+/srv/nvme/crafty /home/admin/crafty none bind,nofail,x-systemd.requires-mounts-for=/srv/nvme 0 0

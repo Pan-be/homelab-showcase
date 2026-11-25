@@ -1,0 +1,7 @@
+/* Priorities board (board.home.example.com) as a full-width strip on top, without Homepage's own card around it. Added 2026-11-05. */
+.services-group:has(#board) { flex-basis: 100% !important; max-width: 100%; }
+.services-group:has(#board) > button { display: none; }
+.services-group:has(#board) .services-list { margin-top: 0; }
+#board .service-card { background: transparent !important; box-shadow: none !important; padding: 0 !important; margin-bottom: 0; }
+#board .service-title { display: none; }
+#board .service-card, #board .service-card * { background-color: transparent !important; }

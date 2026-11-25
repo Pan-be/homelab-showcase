@@ -1,0 +1,17 @@
+---
+# Host layer of Serverus: everything outside Docker that a fresh Ubuntu 24.04 install needs
+# before the stacks in /opt can come back from the restic backup.
+#   Apply:        ansible-playbook site.yml -K
+#   Compare only: ansible-playbook site.yml -K --check --diff
+#   Restore-test VM: add -e restore_test=true (see group_vars/all.yml)
+- name: Serverus host layer
+  hosts: serverus
+  roles:
+    - base
+    - storage
+    - docker
+    - tailscale
+    - backup
+    - user_services
+    - role: crontabs
+      when: not restore_test

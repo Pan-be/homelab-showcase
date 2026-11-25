@@ -1,0 +1,34 @@
+version: "3.8"
+
+services:
+
+  dockge:
+    image: louislam/dockge:1.5.0 # pinned 2026-10-01 (same digest as the old :latest)
+    container_name: dockge
+    restart: unless-stopped
+    ports:
+      - "5001:5001"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /opt:/opt
+      - /home/admin:/home/admin
+      - ./dockge-data:/app/data
+    environment:
+      - DOCKGE_STACKS_DIR=/opt
+    networks:
+      - infra
+
+  uptime-kuma:
+    image: louislam/uptime-kuma:2.5.8 # v2 migration 2026-10-01 (was :latest = 1.23.17)
+    container_name: uptime-kuma
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./uptime-kuma-data:/app/data
+    networks:
+      - infra
+
+networks:
+  infra:
+

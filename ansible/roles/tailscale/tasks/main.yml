@@ -1,0 +1,54 @@
+---
+# get_url reports "changed" in check mode even when the file is there, so only fetch when
+# missing (after the first install the tailscale-archive-keyring package keeps it current).
+- name: Look for the Tailscale apt key
+  ansible.builtin.stat:
+    path: /usr/share/keyrings/tailscale-archive-keyring.gpg
+  register: tailscale_key
+
+- name: Tailscale apt key
+  when: not tailscale_key.stat.exists
+  ansible.builtin.get_url:
+    url: https://pkgs.tailscale.com/stable/ubuntu/noble.noarmor.gpg
+    dest: /usr/share/keyrings/tailscale-archive-keyring.gpg
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Tailscale apt repository
+  ansible.builtin.copy:
+    src: "{{ host_files }}/etc/apt/sources.list.d/tailscale.list"
+    dest: /etc/apt/sources.list.d/tailscale.list
+    owner: root
+    group: root
+    mode: "0644"
+  register: tailscale_repo
+
+- name: Tailscale package
+  ansible.builtin.apt:
+    name: tailscale
+    state: present
+    update_cache: "{{ tailscale_repo is changed }}"
+
+- name: Tailscale daemon enabled and running
+  ansible.builtin.systemd_service:
+    name: tailscaled
+    enabled: true
+    state: started
+
+# Joining the tailnet needs a browser login (or an auth key), so it stays a manual step.
+- name: Read the Tailscale state
+  ansible.builtin.command: tailscale status --json
+  register: tailscale_status
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Tell what to do if this machine is not on the tailnet yet
+  ansible.builtin.debug:
+    msg:
+      - "Tailscale is not logged in. Run: sudo tailscale up {{ tailscale_up_flags }}"
+      - "Then in the admin console: approve the subnet route, check the 'serverus' name and the split DNS for home.arpa."
+  when: >-
+    tailscale_status.rc != 0 or
+    (tailscale_status.stdout | from_json).BackendState != 'Running'
